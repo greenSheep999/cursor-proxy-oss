@@ -80,6 +80,49 @@ Ready-to-paste config for each mainstream coding CLI:
 - [Kubernetes](docs/deployment/kubernetes.md)
 - [Preparing an auth file](docs/deployment/auth-file.md)
 
+## Go SDK + `cpctl` CLI
+
+Two Go packages live in this repo alongside the docs:
+
+- **`sdk/`** — a small typed HTTP client for the proxy's public API.
+  Covers Chat Completions (streaming + non-streaming), Anthropic
+  Messages, models list/detail, token estimator, and a `Probe`
+  health check. Zero third-party runtime deps.
+
+  ```go
+  client := sdk.NewClient(sdk.Config{
+      BaseURL: "http://localhost:8317",
+      APIKey:  os.Getenv("CURSOR_PROXY_API_KEY"),
+  })
+  resp, _ := client.ChatCompletion(ctx, sdk.ChatRequest{
+      Model:    "composer-2.5",
+      Messages: []sdk.Message{{Role: "user", Content: "hi"}},
+  })
+  fmt.Println(resp.Choices[0].Message.Content)
+  ```
+
+- **`cmd/cpctl/`** — an operator CLI built on top of the SDK. Verbs:
+
+  ```bash
+  cpctl health                 # probe + latency + model count
+  cpctl models -o json         # list models
+  cpctl chat "explain generics" -s     # one-shot chat, streamed
+  cpctl count "some text"      # heuristic Anthropic-style token count
+  cpctl keygen                 # print a fresh sk-cp-* key
+  ```
+
+Full runnable programs are in [`examples/go/`](examples/go/).
+
+Build locally:
+
+```bash
+go build ./cmd/cpctl
+./cpctl health
+```
+
+Or download the multi-platform binaries from the latest CI artifact
+(builds for `linux|darwin|windows` × `amd64|arm64`).
+
 ## What models can I use?
 
 The exact list depends on your Cursor account plan and region. All Cursor-provided models pass through — a typical Pro account exposes:
