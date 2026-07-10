@@ -23,16 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Config lives at .markdownlint-cli2.jsonc so it's discovered
+      # from the repo root without inline YAML gymnastics.
       - uses: DavidAnson/markdownlint-cli2-action@v20
-        with:
-          globs: |
-            README.md
-            docs/**/*.md
-          config: |
-            {
-              "default": true,
-              "MD013": false,
-              "MD033": false,
-              "MD041": false,
-              "MD024": { "siblings_only": true }
-            }

@@ -50,6 +50,7 @@ MSG
 fi
 
 echo "✔ found auth file(s):"
+# shellcheck disable=SC2012  # ls output is human-facing here, not machine-parsed
 ls -la auth/*.json | sed 's/^/    /'
 
 echo "→ pulling latest image..."
