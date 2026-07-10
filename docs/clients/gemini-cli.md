@@ -28,8 +28,10 @@ version.
 
 ## Recommended models
 
-- `gemini-2.5-pro`
-- `gemini-2.5-flash`
+- `gemini-3.1-pro` — best default
+- `gemini-3-flash` — fastest
+- `gemini-3.5-flash` — mid-tier
+- `gemini-2.5-flash` — previous generation, cheapest
 
 ## Try
 
@@ -48,3 +50,7 @@ gemini "summarise this diff:" < <(git diff HEAD~1)
   whole request.
 - The stream shape is `data: {json}\n\n` with a terminal
   `finishReason:"STOP"` chunk carrying full `usageMetadata`.
+- **Region gate**: from a CN/HK egress, `gemini-*` returns HTTP 403
+  `Model not available in your region`. Set `-upstream-proxy` (or
+  `HTTPS_PROXY`) on the cursor-proxy container to a US/EU proxy. See
+  [`../deployment/proxy.md`](../deployment/proxy.md).

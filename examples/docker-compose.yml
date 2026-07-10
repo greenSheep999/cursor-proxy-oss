@@ -26,6 +26,16 @@ services:
       # inside the ./auth mount below.
       CURSOR_PROXY_ACCOUNT_FILE: "/data/accounts/current.json"
 
+      # Outbound proxy for Claude / GPT / Gemini upstreams. Cursor
+      # geo-gates those model families by request IP — from a CN/HK
+      # egress they return HTTP 403 "Model not available in your
+      # region". Point HTTPS_PROXY at a US or EU endpoint to unlock
+      # them. Cursor-native models (composer/grok/kimi/glm) do NOT
+      # need this. See docs/deployment/proxy.md.
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1}"
+
       # Optional: turn off the local prompt-cache simulator if you want
       # real Cursor cache_read numbers pass-through.
       # CURSOR_PROXY_SIMULATE_CACHE: "false"

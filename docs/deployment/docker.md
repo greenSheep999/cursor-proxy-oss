@@ -71,6 +71,39 @@ docker compose pull && docker compose up -d
 `pull_policy: always` on the compose service means restart-in-place
 pulls the newest `:latest`.
 
+## Unlocking Claude / GPT / Gemini
+
+If you sit behind a CN or HK IP, Cursor's backend gates the Anthropic /
+OpenAI / Google model families and cursor-proxy will surface HTTP 403
+`Model not available in your region` for them. Cursor-native models
+(`composer-*`, `grok-*`, `kimi-*`, `glm-*`) are unaffected.
+
+To unlock the gated families, add an outbound proxy to `.env`:
+
+```
+HTTPS_PROXY=http://127.0.0.1:10808          # example: local system proxy
+# or:
+HTTPS_PROXY=socks5://user:pass@remote:1080  # example: remote SOCKS5
+NO_PROXY=localhost,127.0.0.1
+```
+
+`docker-compose up -d` picks these up from `.env` automatically. Look
+for this line in `docker compose logs cursor-proxy`:
+
+```
+[proxy] upstream proxy: http://127.0.0.1:10808
+```
+
+If your proxy runs on the host at `127.0.0.1`, containers cannot reach
+it as `127.0.0.1` (that's the container's own loopback). Use one of:
+
+- `HTTPS_PROXY=http://host.docker.internal:10808` on Docker Desktop
+  (macOS/Windows).
+- Run the proxy service in the same compose file with a service name.
+- Bind the proxy to `0.0.0.0` on the host and use the LAN IP.
+
+See [`proxy.md`](proxy.md) for a full reference.
+
 ## Verifying
 
 ```bash
@@ -79,3 +112,11 @@ curl http://localhost:8317/v1/models -H "Authorization: Bearer $SK" \
 ```
 
 Response should list every model your Cursor account can use.
+
+Try a Claude model to confirm the outbound proxy is wired:
+
+```bash
+curl http://localhost:8317/v1/chat/completions \
+  -H "Authorization: Bearer $SK" -H "content-type: application/json" \
+  -d '{"model":"claude-sonnet-5-medium","messages":[{"role":"user","content":"hi"}]}'
+```

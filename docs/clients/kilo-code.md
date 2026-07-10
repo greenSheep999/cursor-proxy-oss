@@ -15,7 +15,7 @@ In Kilo Code settings:
   against `cursor-proxy`).
 - **Base URL**: `http://localhost:8317/v1`
 - **API Key**: your `$SK`
-- **Model ID**: `composer-2.5`, `claude-4.5-sonnet`, `gpt-5`, etc.
+- **Model ID**: `composer-2.5`, `claude-sonnet-5-medium`, `claude-fable-5-medium`, `gpt-5.6-sol-medium`, `gemini-3.1-pro`, etc.
 
 If Kilo Code sends `x-api-key` in OpenRouter mode instead of
 `Authorization: Bearer`, that's fine — `cursor-proxy` accepts both.

@@ -13,7 +13,7 @@ In Cline settings:
 - **API Provider**: `OpenAI Compatible`
 - **Base URL**: `http://localhost:8317/v1`
 - **API Key**: your `$SK`
-- **Model ID**: `composer-2.5` (or `claude-4.5-sonnet`, `gpt-5`, ...)
+- **Model ID**: `composer-2.5` (or `claude-sonnet-5-medium`, `gpt-5.6-sol-medium`, `gemini-3.1-pro`, ...)
 
 If you run `cursor-proxy` on a different machine, replace `localhost` with
 that host's IP or tailscale name — remember to expose port 8317 first.

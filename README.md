@@ -50,17 +50,32 @@ cd cursor-proxy-oss
 # 2. Generate an API key and put it in .env
 SK=sk-cp-$(openssl rand -hex 16)
 echo "CURSOR_PROXY_API_KEYS=$SK" > .env
+
+# 3. (Optional but usually required)  Set an outbound proxy for the
+#    Anthropic / OpenAI / Gemini model families. Cursor's backend
+#    geo-gates those upstreams by request IP — from a CN/HK egress
+#    every claude-* / gpt-* / gemini-* request returns HTTP 403
+#    "Model not available in your region". Point HTTPS_PROXY at a
+#    US or EU proxy (http:// or socks5://) to unlock them.
+echo "HTTPS_PROXY=http://127.0.0.1:10808" >> .env   # your local system proxy
+# echo "HTTPS_PROXY=socks5://user:pass@host:1080" >> .env  # or a remote SOCKS5
+
 echo "SK=$SK"
 
-# 3. Start
+# 4. Start
 docker compose up -d
 
-# 4. Try it
+# 5. Try it
 curl http://localhost:8317/v1/chat/completions \
   -H "Authorization: Bearer $SK" \
   -H "content-type: application/json" \
-  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"hi"}]}'
+  -d '{"model":"claude-sonnet-5-medium","messages":[{"role":"user","content":"hi"}]}'
 ```
+
+> If you skip step 3, `composer-2.5` / `grok-4.5-*` / `kimi-*` / `glm-*` still
+> work directly — those are Cursor-native models with no geo-gate. Only the
+> Anthropic / OpenAI / Gemini families need the outbound proxy.
+> See [`docs/deployment/proxy.md`](docs/deployment/proxy.md) for details.
 
 ## Supported clients
 
@@ -79,6 +94,7 @@ Ready-to-paste config for each mainstream coding CLI:
 - [Docker Compose](docs/deployment/docker.md)
 - [Kubernetes](docs/deployment/kubernetes.md)
 - [Preparing an auth file](docs/deployment/auth-file.md)
+- [Upstream proxy (unlocks Claude / GPT / Gemini)](docs/deployment/proxy.md)
 
 ## Go SDK + `cpctl` CLI
 
@@ -125,11 +141,38 @@ Or download the multi-platform binaries from the latest CI artifact
 
 ## What models can I use?
 
-The exact list depends on your Cursor account plan and region. All Cursor-provided models pass through — a typical Pro account exposes:
+Every Cursor model your account can reach passes through. A current Pro
+account with the upstream proxy configured exposes ~190 models across
+these families:
 
-`composer-2.5`, `composer-2.5-fast`, `claude-4.5-sonnet`, `claude-4.5-haiku`, `claude-opus-4.1`, `gpt-5`, `gpt-5-mini`, `gpt-5-codex`, `gemini-2.5-pro`, `gemini-2.5-flash`, `grok-code`, `cursor-small`.
+| Family | Examples |
+|---|---|
+| **Cursor-native** (no geo-gate) | `composer-2.5`, `composer-2.5-fast` |
+| **GPT-5.6** ("sol" / "terra" / "luna" variants, each with low/medium/high/xhigh/max effort tiers, `*-fast` variants) | `gpt-5.6-sol-medium`, `gpt-5.6-terra-high`, `gpt-5.6-luna-max-fast` |
+| **GPT-5.5** | `gpt-5.5-low`, `gpt-5.5-medium`, `gpt-5.5-high`, `gpt-5.5-max` (+ `-fast`) |
+| **Claude 5 line** (sonnet-5, fable-5; `low/medium/high/xhigh/max` + `-thinking` for extended reasoning) | `claude-sonnet-5-medium`, `claude-fable-5-thinking-high`, `claude-sonnet-5-xhigh` |
+| **Claude 4.x line** (opus-4-8, opus-4-7, 4.6-sonnet, 4.5-sonnet, 4.5-haiku, opus-4.1) | `claude-opus-4-8-medium`, `claude-4.6-sonnet-medium`, `claude-4.5-sonnet` |
+| **Gemini 3.x** | `gemini-3.1-pro`, `gemini-3-flash`, `gemini-3.5-flash`, `gemini-2.5-flash` |
+| **Grok 4.5** | `grok-4.5-medium`, `grok-4.5-high`, `grok-4.5-xhigh` (+ `-fast`) |
+| **Others** | `kimi-k2.7-code`, `glm-5.2-high`, `glm-5.2-max` |
 
-Call `GET /v1/models` after the proxy starts to see exactly what your account can access.
+Effort tiers (`low` → `medium` → `high` → `xhigh` → `max`) trade latency
+for output quality. `-fast` variants stream noticeably quicker at the
+cost of a small quality drop. `-thinking` variants inject a chain-of-
+thought pass before the final answer — the token counts include
+`reasoning_tokens`.
+
+Some models require **Max Mode** on your account (opus-4.1, some `-max`
+variants). Those return HTTP 400 with `Max Mode Required` when your tier
+is too low — no other endpoints are affected.
+
+Call `GET /v1/models` after the proxy starts to see exactly what your
+own account can reach:
+
+```bash
+curl http://localhost:8317/v1/models -H "Authorization: Bearer $SK" \
+  | python3 -c "import sys,json; [print(m['id']) for m in json.load(sys.stdin)['data']]"
+```
 
 ## Notes
 

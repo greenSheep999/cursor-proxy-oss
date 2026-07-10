@@ -20,10 +20,15 @@ export OPENAI_API_KEY=$SK
 ## Recommended models
 
 ```bash
-aider --model composer-2.5
-aider --model claude-4.5-sonnet    # if your account has claude access
-aider --model gpt-5
+aider --model composer-2.5                          # Cursor-native, always works
+aider --model claude-sonnet-5-medium                # Claude 5 line
+aider --model claude-4.6-sonnet-medium              # Claude 4.6
+aider --model gpt-5.6-sol-medium                    # GPT-5.6 new-gen
+aider --model gemini-3.1-pro                        # Gemini 3
 ```
+
+Non-Cursor models need the upstream proxy configured on cursor-proxy;
+see [`../deployment/proxy.md`](../deployment/proxy.md).
 
 ## Anthropic mode
 

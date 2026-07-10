@@ -39,8 +39,14 @@ Standard OpenAI Chat Completions shape. Both streaming (`"stream": true`) and no
 ```bash
 curl http://localhost:8317/v1/chat/completions \
   -H "Authorization: Bearer $SK" -H "content-type: application/json" \
-  -d '{"model":"composer-2.5","messages":[{"role":"user","content":"say hi"}]}'
+  -d '{"model":"claude-sonnet-5-medium","messages":[{"role":"user","content":"say hi"}]}'
 ```
+
+Any model your `GET /v1/models` returns can be named here. Common
+picks: `composer-2.5`, `claude-sonnet-5-medium`, `claude-fable-5-medium`,
+`gpt-5.6-sol-medium`, `gemini-3.1-pro`, `grok-4.5-medium`. Non-Cursor-
+native families need the upstream proxy configured — see
+[`deployment/proxy.md`](deployment/proxy.md).
 
 ## `POST /v1/responses` — OpenAI Responses API
 

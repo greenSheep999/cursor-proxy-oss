@@ -25,6 +25,16 @@ services:
       CURSOR_PROXY_API_KEYS: "${CURSOR_PROXY_API_KEYS:?set CURSOR_PROXY_API_KEYS in .env}"
       # Path (inside the container) to the Cursor auth JSON.
       CURSOR_PROXY_ACCOUNT_FILE: "/data/accounts/current.json"
+      # Optional outbound proxy for the Anthropic / OpenAI / Gemini
+      # model families. Cursor geo-gates those upstreams by IP; from
+      # a CN/HK egress every claude-*/gpt-*/gemini-* request returns
+      # 403 "Model not available in your region". Point at a US/EU
+      # http:// or socks5:// endpoint to unlock them. Cursor-native
+      # models (composer-*, grok-*, kimi-*, glm-*) work without this.
+      # See docs/deployment/proxy.md.
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1}"
     volumes:
       # Read-only mount of the account file. Populate the host ./auth/
       # directory with one or more cursor-<email>.json files and point

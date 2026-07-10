@@ -20,9 +20,23 @@ itself.
 
 ## Recommended models
 
-- `claude-4.5-sonnet` — best default
-- `claude-4.5-haiku` — fast, cheap
-- `claude-opus-4.1` — heaviest, most careful
+Newest first — pick the effort tier that matches your latency budget:
+
+- **Claude 5 line** (best for planning, refactor, hard code):
+  - `claude-sonnet-5-medium` — best default
+  - `claude-sonnet-5-high` — deeper reasoning
+  - `claude-sonnet-5-thinking-high` — explicit chain-of-thought
+  - `claude-fable-5-medium` — Fable variant
+- **Claude 4.x line** (still solid, less compute):
+  - `claude-opus-4-8-medium` — heavy, most careful
+  - `claude-4.6-sonnet-medium`
+  - `claude-4.5-sonnet` / `claude-4.5-haiku` — fastest of the Claude family
+- Higher effort tiers (`-high`, `-xhigh`, `-max`) and `-fast` variants of
+  each are also available — see `curl /v1/models` for the full list.
+
+Some heavy variants (`claude-opus-4.1`, some `-max`) require Max Mode on
+your Cursor account and return HTTP 400 `Max Mode Required` if your
+tier is too low.
 
 ## Try
 
@@ -38,6 +52,7 @@ claude "explain the differences between mutex and channel in Go"
 - The `count_tokens` calls Claude Code sometimes makes are answered by
   `/v1/messages/count_tokens` (a heuristic estimator — not Anthropic's
   real tokenizer). The returned number is approximate but shape-correct.
-- If your Cursor account is CN-region and `claude-*` is blocked, this
-  client won't work regardless of the proxy. Switch to a
-  non-region-locked account or use `codex` against `gpt-5`.
+- **Region gate**: from a CN/HK egress, `claude-*` returns
+  `HTTP 403 Model not available in your region`. Set `-upstream-proxy`
+  (or `HTTPS_PROXY`) on the cursor-proxy container to a US/EU proxy.
+  See [`../deployment/proxy.md`](../deployment/proxy.md).

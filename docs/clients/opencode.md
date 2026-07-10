@@ -24,8 +24,10 @@ brew install sst/tap/opencode
       },
       "models": {
         "composer-2.5": {},
-        "gpt-5": {},
-        "claude-4.5-sonnet": {}
+        "gpt-5.6-sol-medium": {},
+        "claude-sonnet-5-medium": {},
+        "claude-fable-5-medium": {},
+        "gemini-3.1-pro": {}
       }
     }
   }

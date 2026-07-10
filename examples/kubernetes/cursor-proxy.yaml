@@ -12,6 +12,14 @@ metadata:
 type: Opaque
 stringData:
   CURSOR_PROXY_API_KEYS: "sk-cp-CHANGE-ME"
+  # Uncomment to route Anthropic / OpenAI / Google upstreams through
+  # a US or EU proxy. Cursor's backend geo-gates those families by IP;
+  # from a CN/HK egress you'll get HTTP 403 without this. Cursor-native
+  # models (composer, grok, kimi, glm) do NOT need this. See
+  # docs/deployment/proxy.md for details.
+  # HTTPS_PROXY: "socks5://user:pass@your-us-proxy:1080"
+  # HTTP_PROXY:  "socks5://user:pass@your-us-proxy:1080"
+  # NO_PROXY:    "localhost,127.0.0.1"
 ---
 apiVersion: v1
 kind: ConfigMap
