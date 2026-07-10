@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+
+# Never commit auth material.
+auth/
+accounts/
+*.token
+.cursor-token
+
+# Editor / OS junk.
+.DS_Store
+.idea/
+.vscode/
+*.swp

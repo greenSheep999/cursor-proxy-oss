@@ -1,0 +1,93 @@
+# Minimal single-account cursor-proxy deployment.
+# See docs/deployment/kubernetes.md for details.
+#
+# Before applying:
+#   1. Replace CURSOR_PROXY_API_KEYS below with a real generated key.
+#   2. Fill in the ConfigMap `cursor-proxy-account` with your auth JSON.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cursor-proxy-secrets
+type: Opaque
+stringData:
+  CURSOR_PROXY_API_KEYS: "sk-cp-CHANGE-ME"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cursor-proxy-account
+data:
+  current.json: |
+    {
+      "type": "cursor",
+      "email": "you@example.com",
+      "access_token": "PLACEHOLDER",
+      "refresh_token": "PLACEHOLDER",
+      "refreshable": true
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cursor-proxy
+  labels:
+    app: cursor-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cursor-proxy
+  template:
+    metadata:
+      labels:
+        app: cursor-proxy
+    spec:
+      containers:
+        - name: cursor-proxy
+          image: ghcr.io/greensheep999/cursor-proxy:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8317
+              name: http
+          env:
+            - name: CURSOR_PROXY_ACCOUNT_FILE
+              value: /data/accounts/current.json
+          envFrom:
+            - secretRef:
+                name: cursor-proxy-secrets
+          volumeMounts:
+            - name: account
+              mountPath: /data/accounts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /v1/models
+              port: 8317
+              httpHeaders:
+                - name: Authorization
+                  value: "Bearer sk-cp-CHANGE-ME"
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: account
+          configMap:
+            name: cursor-proxy-account
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cursor-proxy
+spec:
+  selector:
+    app: cursor-proxy
+  ports:
+    - port: 8317
+      targetPort: 8317

@@ -1,0 +1,18 @@
+cursor-proxy-oss
+Copyright 2026 greenSheep999
+
+Licensed under the Apache License, Version 2.0 (the "License").
+You may not use this repository except in compliance with the License.
+A copy of the License is bundled with this repository as LICENSE.
+
+This project is NOT affiliated with, endorsed by, or sponsored by
+Cursor / Anysphere. "Cursor" is a trademark of Anysphere Inc.
+
+The Docker image referenced by this repository (`ghcr.io/greensheep999/
+cursor-proxy`) implements an HTTP proxy that forwards requests to
+Cursor's servers on behalf of a user who supplies their own Cursor Pro
+account credentials.
+
+Users of this software are solely responsible for ensuring their use
+complies with Cursor's Terms of Service, their local laws, and any
+account-level agreements they have with Anysphere.

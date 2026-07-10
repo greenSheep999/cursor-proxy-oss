@@ -1,0 +1,32 @@
+# Minimal docker-compose for cursor-proxy.
+#
+# Setup:
+#   1. Drop a Cursor auth JSON at ./auth/current.json (see
+#      docs/deployment/auth-file.md).
+#   2. Copy .env.example to .env and set CURSOR_PROXY_API_KEYS.
+#   3. `docker compose up -d`.
+#
+# The image is built off multi-arch (linux/amd64 + linux/arm64) so it runs
+# unchanged on Intel and Apple silicon hosts, x86 servers, and Raspberry Pi.
+
+services:
+  cursor-proxy:
+    image: ghcr.io/greensheep999/cursor-proxy:latest
+    container_name: cursor-proxy
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      # Localhost-only by default. Change to "8317:8317" only behind a
+      # trusted network (LAN, tailscale, ...).
+      - "127.0.0.1:8317:8317"
+    environment:
+      # Comma-separated allowlist. Clients must present one of these keys.
+      # Never expose the proxy without setting this.
+      CURSOR_PROXY_API_KEYS: "${CURSOR_PROXY_API_KEYS:?set CURSOR_PROXY_API_KEYS in .env}"
+      # Path (inside the container) to the Cursor auth JSON.
+      CURSOR_PROXY_ACCOUNT_FILE: "/data/accounts/current.json"
+    volumes:
+      # Read-only mount of the account file. Populate the host ./auth/
+      # directory with one or more cursor-<email>.json files and point
+      # CURSOR_PROXY_ACCOUNT_FILE at the one you want to use.
+      - ./auth:/data/accounts:ro

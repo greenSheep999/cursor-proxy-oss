@@ -1,0 +1,50 @@
+# Fully-commented docker-compose example. Copy to the repo root as
+# docker-compose.yml (or use -f examples/docker-compose.yml directly).
+
+services:
+  cursor-proxy:
+    # Multi-arch image published from the private core repo.
+    # linux/amd64 + linux/arm64 both work — Docker picks the right one.
+    image: ghcr.io/greensheep999/cursor-proxy:latest
+    container_name: cursor-proxy
+    restart: unless-stopped
+    # Always try to pull a newer image at compose up. Remove if you want
+    # to pin to whatever image is on the host.
+    pull_policy: always
+
+    ports:
+      # 127.0.0.1 only. To expose on the LAN, change to "8317:8317" AND
+      # make sure CURSOR_PROXY_API_KEYS is a strong, secret value.
+      - "127.0.0.1:8317:8317"
+
+    environment:
+      # Required. Comma-separated allowlist.
+      #   SK=sk-cp-$(openssl rand -hex 16); echo "CURSOR_PROXY_API_KEYS=$SK" > .env
+      CURSOR_PROXY_API_KEYS: "${CURSOR_PROXY_API_KEYS:?set CURSOR_PROXY_API_KEYS in .env}"
+
+      # Path inside the container to the auth JSON. Must match a file
+      # inside the ./auth mount below.
+      CURSOR_PROXY_ACCOUNT_FILE: "/data/accounts/current.json"
+
+      # Optional: turn off the local prompt-cache simulator if you want
+      # real Cursor cache_read numbers pass-through.
+      # CURSOR_PROXY_SIMULATE_CACHE: "false"
+
+    volumes:
+      # Read-only mount. Put your cursor-<email>.json file(s) in ./auth.
+      # If you drop several accounts here, point CURSOR_PROXY_ACCOUNT_FILE
+      # at the specific one to use.
+      - ./auth:/data/accounts:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- -S --header 'Authorization: Bearer '\"$${CURSOR_PROXY_API_KEYS%%,*}\" http://localhost:8317/v1/models 2>&1 | grep -q 'HTTP/1.1 200'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
