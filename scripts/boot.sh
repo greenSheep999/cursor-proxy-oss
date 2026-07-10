@@ -34,6 +34,7 @@ else
 fi
 
 mkdir -p auth
+chmod 755 auth  # so a container UID != host UID can still ls it
 if ! ls auth/*.json >/dev/null 2>&1; then
   cat <<'MSG'
 
