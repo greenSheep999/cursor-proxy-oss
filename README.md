@@ -308,6 +308,13 @@ etc.). They are refreshed automatically on every upstream release by
 
 Full history: [releases page](https://github.com/greenSheep999/cursor-proxy-oss/releases).
 
+**Older kernel line (`cursor3.10`)** &nbsp;·&nbsp; The `cursor3.10-*`
+image tags on GHCR track the Cursor 3.10.20 kernel line for accounts
+provisioned against that older client build. They are maintenance-only
+— agent mode is not back-ported, and new features land on `3.11` first.
+If you're setting up a fresh install, use `cursor3.11-*`.
+Latest 3.10 image: `ghcr.io/greensheep999/cursor-proxy:cursor3.10-latest`.
+
 ### Project history (pre-v0.2.3)
 
 The project bootstrapped from a full protobuf reverse of Cursor's
