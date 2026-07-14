@@ -1,0 +1,139 @@
+name: sync-from-upstream
+
+# Triggered by a repository_dispatch from the upstream cursor-proto repo
+# whenever a new release tag (cursor<X.Y>/v<x.y.z>) ships. Updates the
+# image tag pinned across docker-compose.yml and the deployment docs,
+# commits the change, and mirrors the release as an OSS-side tag
+# (cursor<X.Y>-v<x.y.z>) so `git checkout <tag>` gives a known-good
+# snapshot.
+#
+# Expected client_payload:
+#   upstream_tag: "cursor3.11/v0.2.3"     — raw upstream tag
+#   cursor_line:  "cursor3.11"            — line component
+#   semver:       "v0.2.3"                — semver component
+#   is_primary:   "true" | "false"        — whether upstream considers
+#                                           this the primary line
+#
+# The docker tag we pin to is "<cursor_line>-<semver>" (e.g.
+# cursor3.11-v0.2.3), matching the upstream tagging convention. This
+# job never pins to `:latest` — the whole point is reproducibility.
+
+on:
+  repository_dispatch:
+    types: [upstream-release]
+  workflow_dispatch:
+    inputs:
+      upstream_tag:
+        description: "Upstream tag (e.g. cursor3.11/v0.2.3)"
+        required: true
+      cursor_line:
+        description: "Cursor line (e.g. cursor3.11)"
+        required: true
+      semver:
+        description: "Semver (e.g. v0.2.3)"
+        required: true
+      is_primary:
+        description: "Primary line? true|false"
+        required: false
+        default: "true"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve payload
+        id: payload
+        env:
+          DISPATCH_TAG: ${{ github.event.client_payload.upstream_tag }}
+          DISPATCH_LINE: ${{ github.event.client_payload.cursor_line }}
+          DISPATCH_SEMVER: ${{ github.event.client_payload.semver }}
+          DISPATCH_PRIMARY: ${{ github.event.client_payload.is_primary }}
+          MANUAL_TAG: ${{ github.event.inputs.upstream_tag }}
+          MANUAL_LINE: ${{ github.event.inputs.cursor_line }}
+          MANUAL_SEMVER: ${{ github.event.inputs.semver }}
+          MANUAL_PRIMARY: ${{ github.event.inputs.is_primary }}
+        run: |
+          set -euo pipefail
+          TAG="${DISPATCH_TAG:-${MANUAL_TAG:-}}"
+          LINE="${DISPATCH_LINE:-${MANUAL_LINE:-}}"
+          SEMVER="${DISPATCH_SEMVER:-${MANUAL_SEMVER:-}}"
+          PRIMARY="${DISPATCH_PRIMARY:-${MANUAL_PRIMARY:-true}}"
+
+          if [[ -z "${TAG}" || -z "${LINE}" || -z "${SEMVER}" ]]; then
+            echo "::error::missing upstream_tag/cursor_line/semver in payload"
+            exit 1
+          fi
+
+          IMAGE_TAG="${LINE}-${SEMVER}"
+
+          echo "upstream_tag=${TAG}"       >> "$GITHUB_OUTPUT"
+          echo "cursor_line=${LINE}"       >> "$GITHUB_OUTPUT"
+          echo "semver=${SEMVER}"          >> "$GITHUB_OUTPUT"
+          echo "is_primary=${PRIMARY}"     >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}"    >> "$GITHUB_OUTPUT"
+          echo "oss_tag=${IMAGE_TAG}"      >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rewrite image tags
+        env:
+          NEW_TAG: ${{ steps.payload.outputs.image_tag }}
+        # Files under scripts/ or docs/ that reference the image should
+        # move together — grep for anything that pins the ghcr image and
+        # rewrite in-place. The match is anchored so we only rewrite the
+        # image tag suffix, not other occurrences of "latest".
+        run: |
+          set -euo pipefail
+          IMG="ghcr.io/greensheep999/cursor-proxy"
+
+          mapfile -t FILES < <(grep -rEl "${IMG}:[A-Za-z0-9._-]+" \
+            docker-compose.yml README.md docs/ 2>/dev/null || true)
+
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "::warning::no files reference ${IMG}:<tag>; nothing to rewrite"
+            exit 0
+          fi
+
+          for f in "${FILES[@]}"; do
+            echo "rewriting ${f}"
+            # sed -i differs between BSD and GNU; runners are Ubuntu so GNU is fine.
+            sed -i -E "s|(${IMG}):[A-Za-z0-9._-]+|\\1:${NEW_TAG}|g" "${f}"
+          done
+
+      - name: Show diff
+        run: git --no-pager diff --stat && echo "---" && git --no-pager diff
+
+      - name: Commit, tag, push
+        env:
+          UPSTREAM_TAG: ${{ steps.payload.outputs.upstream_tag }}
+          OSS_TAG: ${{ steps.payload.outputs.oss_tag }}
+          IMAGE_TAG: ${{ steps.payload.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "no changes to commit — image tag already pinned to ${IMAGE_TAG}"
+          else
+            git add -A
+            git commit \
+              -m "chore(sync): follow upstream ${UPSTREAM_TAG}" \
+              -m "Pin ghcr.io/greensheep999/cursor-proxy to ${IMAGE_TAG}. Triggered by upstream release ${UPSTREAM_TAG}."
+            git push origin HEAD:main
+          fi
+
+          # Idempotent tag: if it already exists (re-run of the same
+          # dispatch), don't fail the job.
+          if git rev-parse -q --verify "refs/tags/${OSS_TAG}" >/dev/null; then
+            echo "tag ${OSS_TAG} already exists — skipping"
+          else
+            git tag -a "${OSS_TAG}" -m "Follow upstream ${UPSTREAM_TAG}"
+            git push origin "refs/tags/${OSS_TAG}"
+          fi

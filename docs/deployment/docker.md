@@ -69,7 +69,9 @@ docker compose pull && docker compose up -d
 ```
 
 `pull_policy: always` on the compose service means restart-in-place
-pulls the newest `:latest`.
+pulls whichever image tag is currently pinned in `docker-compose.yml`
+(today: `cursor3.11-v0.2.3`). The `sync-from-upstream` GitHub Action
+bumps that pin automatically whenever a new upstream release lands.
 
 ## Unlocking Claude / GPT / Gemini
 
