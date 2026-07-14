@@ -93,7 +93,7 @@ jobs:
           IMG="ghcr.io/greensheep999/cursor-proxy"
 
           mapfile -t FILES < <(grep -rEl "${IMG}:[A-Za-z0-9._-]+" \
-            docker-compose.yml README.md docs/ 2>/dev/null || true)
+            docker-compose.yml README.md docs/ examples/ 2>/dev/null || true)
 
           if [[ ${#FILES[@]} -eq 0 ]]; then
             echo "::warning::no files reference ${IMG}:<tag>; nothing to rewrite"
