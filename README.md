@@ -186,7 +186,7 @@ Quick enable (Docker):
 docker run -p 127.0.0.1:8317:8317 \
   -e CURSOR_PROXY_API_KEYS=sk-cp-... \
   -e CURSOR_API_KEY=crsr_... \
-  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.1
+  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.2
 ```
 
 `CURSOR_API_KEY` is your Cursor dashboard-issued key (`crsr_...`),
@@ -284,7 +284,7 @@ curl http://localhost:8317/v1/models -H "Authorization: Bearer $SK" \
 Image tags follow the upstream kernel line and semver:
 
 ```
-ghcr.io/greensheep999/cursor-proxy:cursor<X.Y>-v<x.y.z>
+ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.2<X.Y>-v<x.y.z>
 ```
 
 - `<X.Y>` — Cursor kernel version being impersonated (e.g. `3.11`).
@@ -313,7 +313,7 @@ image tags on GHCR track the Cursor 3.10.20 kernel line for accounts
 provisioned against that older client build. They are maintenance-only
 — agent mode is not back-ported, and new features land on `3.11` first.
 If you're setting up a fresh install, use `cursor3.11-*`.
-Latest 3.10 image: `ghcr.io/greensheep999/cursor-proxy:cursor3.10-latest`.
+Latest 3.10 image: `ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.2`.
 
 ### Project history (pre-v0.2.3)
 
