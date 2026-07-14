@@ -1,10 +1,15 @@
 # cursor-proxy
 
+> Tracking **Cursor kernel `3.11`** &nbsp;·&nbsp; current image tag `cursor3.11-v0.3.1` &nbsp;·&nbsp;
+> [release history](https://github.com/greenSheep999/cursor-proxy-oss/releases)
+
 Run any modern coding-agent CLI against your own Cursor Pro subscription.
 
-`cursor-proxy` is a small local service that speaks the four public LLM API
+`cursor-proxy` is a small local service that speaks the major public LLM API
 shapes on one port and forwards the actual generation to Cursor's backend
-using your existing Cursor account.
+using your existing Cursor account. From `v0.3.0` it also embeds Cursor's
+official `@cursor/sdk` for full **agent mode** (indexing, MCP servers, skills,
+hooks) — see [Agent mode](#agent-mode).
 
 ```
 ┌──────────────────────────┐    OpenAI / Anthropic / Gemini / Responses    ┌──────────────────┐
@@ -21,7 +26,11 @@ using your existing Cursor account.
 
 ## What you get
 
-One HTTP endpoint that speaks **all four** major provider shapes at once:
+One HTTP endpoint that speaks **four provider shapes** at once, plus
+`cursor-proxy`-specific ops endpoints for capabilities, usage, and
+agent orchestration.
+
+### Wire mode (chat / completions / messages / gemini)
 
 | Route | Shape | Used by |
 |---|---|---|
@@ -35,8 +44,71 @@ One HTTP endpoint that speaks **all four** major provider shapes at once:
 | `GET  /v1/models`, `GET /v1/models/{id}` | OpenAI model list/detail | all |
 | `GET  /v1beta/models` | Gemini model list | Gemini SDK |
 
-All routes support four key sources: `Authorization: Bearer`, `x-api-key`,
-`x-goog-api-key`, and `?key=<APIKEY>` — pick whichever your client sends.
+### Ops / observability (unauthenticated)
+
+| Route | Purpose |
+|---|---|
+| `GET /v1/proxy-info` | Build info, active wire/agent modes, Cursor account snapshot |
+| `GET /v1/capabilities` | Compile-time feature matrix (streaming / caching / tools / thinking / …) |
+| `GET /v1/introspect/recent-tools` | Tools declared by clients in the last N seconds |
+| `GET /v1/introspect/recent-mcp-servers` | Same window projected onto MCP servers |
+| `GET /v1/usage` | Current Cursor account quota & usage snapshot |
+| `GET /v1/usage/events` | Paginated per-request event log (token breakdown, model, latency) |
+
+### Agent mode (optional, since `cursor3.11/v0.3.0`)
+
+| Route | Purpose |
+|---|---|
+| `POST /v1/agents` | Create an agent (local or cloud runtime) |
+| `GET /v1/agents`, `GET /v1/agents/{id}` | List / describe agents |
+| `POST /v1/agents/{id}/runs` | Run a prompt (streaming or one-shot) |
+| `DELETE /v1/agents/{id}` | Close an agent (idempotent) |
+
+Powered by `@cursor/sdk` under a Node runner. See
+[docs/agents.md](docs/agents.md) for setup.
+
+### Authentication
+
+Wire and ops routes accept four key sources: `Authorization: Bearer`,
+`x-api-key`, `x-goog-api-key`, and `?key=<APIKEY>` — pick whichever
+your client sends. Ops routes marked *unauthenticated* skip the key
+gate so ops probes and sidecar supervisors can read them freely
+(no secrets are exposed).
+
+## Features
+
+- **Multi-provider on one port** — OpenAI (chat/legacy/responses),
+  Anthropic Messages, Gemini native, all served side-by-side.
+- **True SSE streaming** for chat/completions and messages
+  (per-token stream from Cursor's backend).
+- **Multi-turn tool loop** — `tool_use` / `tool_result` history
+  threads coherently, tool inputs delivered as valid JSON.
+- **Prompt-cache accounting** — `cache_read_input_tokens` /
+  `cache_creation_input_tokens` from Cursor's upstream, blended
+  with an in-proxy LRU-TTL simcache for realistic counts.
+- **MCP tools passthrough** — `mcp__server__tool` names flow to
+  Cursor MCP unchanged, so Claude Code / aider / cline all
+  "just work" with your MCP fleet.
+- **Extended thinking** — Anthropic thinking blocks preserved for
+  reasoning models (`*-thinking-*`).
+- **Model aliasing & effort mapping** — canonical Anthropic model
+  names auto-map to Cursor's tier form; `output_config.effort`
+  and `thinking.budget_tokens` map onto `-low/-medium/-high/-xhigh/-max`
+  suffixes.
+- **Multi-key auth** — comma-separated `CURSOR_PROXY_API_KEYS`,
+  every client uses its own key.
+- **Upstream egress proxy** — `HTTPS_PROXY` / `HTTP_PROXY` unlock
+  geo-gated model families (`claude-*` / `gpt-*` / `gemini-*`).
+- **Ops surface** — `/v1/proxy-info` + `/v1/capabilities` +
+  `/v1/introspect/*` + `/v1/usage*` for probes and dashboards.
+- **Agent mode (`v0.3.0+`)** — full `@cursor/sdk` integration:
+  codebase indexing, MCP server management, skills, hooks, cloud
+  runtimes with auto-PR.
+- **Multi-arch Docker image** — `linux/amd64` + `linux/arm64`,
+  works on Intel/AMD servers, Apple Silicon, Raspberry Pi.
+- **Version pinned to upstream kernel** — image tag is
+  `cursor<kernel>-v<semver>` (e.g. `cursor3.11-v0.3.1`), so you
+  always know which Cursor client version is being impersonated.
 
 ## Quick start
 
@@ -88,6 +160,39 @@ Ready-to-paste config for each mainstream coding CLI:
 - [cline](docs/clients/cline.md)
 - [Kilo Code](docs/clients/kilo-code.md)
 - [opencode](docs/clients/opencode.md)
+
+## Endpoint reference
+
+- [All endpoints](docs/endpoints.md) — full request/response shapes,
+  auth rules, and error cases for every route.
+- [Observability endpoints](docs/observability.md) — `/v1/capabilities`,
+  `/v1/introspect/*`, `/v1/usage*`, `/v1/proxy-info`.
+- [Agent mode](docs/agents.md) — `/v1/agents/*` setup and usage.
+
+## Agent mode
+
+`cursor3.11/v0.3.0` adds an optional **agent mode** — a `/v1/agents/*`
+HTTP surface backed by the official `@cursor/sdk` Node package. It runs
+alongside wire mode (both share the same process, `-api-keys` gate,
+and Cursor account) and unlocks capabilities the wire protocol can't
+express: codebase indexing, MCP server management, skills, hooks, and
+cloud runtimes with auto-PR.
+
+Wire mode keeps working exactly as before if you skip agent mode.
+
+Quick enable (Docker):
+
+```bash
+docker run -p 127.0.0.1:8317:8317 \
+  -e CURSOR_PROXY_API_KEYS=sk-cp-... \
+  -e CURSOR_API_KEY=crsr_... \
+  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.1
+```
+
+`CURSOR_API_KEY` is your Cursor dashboard-issued key (`crsr_...`),
+distinct from the IDE `accessToken` used by wire mode. See
+[docs/agents.md](docs/agents.md) for the full HTTP surface, cloud
+runtimes, and troubleshooting.
 
 ## Deployment
 
@@ -173,6 +278,55 @@ own account can reach:
 curl http://localhost:8317/v1/models -H "Authorization: Bearer $SK" \
   | python3 -c "import sys,json; [print(m['id']) for m in json.load(sys.stdin)['data']]"
 ```
+
+## Version tracking
+
+Image tags follow the upstream kernel line and semver:
+
+```
+ghcr.io/greensheep999/cursor-proxy:cursor<X.Y>-v<x.y.z>
+```
+
+- `<X.Y>` — Cursor kernel version being impersonated (e.g. `3.11`).
+  Different kernel lines are wire-incompatible; pick the one that
+  matches the Cursor IDE build your account was provisioned against.
+- `<x.y.z>` — `cursor-proxy` semver.
+- `latest` and `cursor<X.Y>-latest` — moving pointers (avoid in
+  production; pin to an explicit `cursor<X.Y>-v<x.y.z>`).
+
+Git tags in this repo mirror image tags 1-for-1 (`cursor3.11-v0.3.1`
+etc.). They are refreshed automatically on every upstream release by
+`.github/workflows/sync-from-upstream.yml`.
+
+**Major milestones** (with kernel version):
+
+| Release | Kernel | Headline |
+|---|---|---|
+| [`cursor3.11-v0.3.1`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.1) | `3.11` | Agent mode via `@cursor/sdk` + `/v1/usage/events` |
+| [`cursor3.11-v0.2.7`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.2.7) | `3.11` | Observability endpoints + per-window token breakdown |
+| [`cursor3.11-v0.2.3`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.2.3) | `3.11` | Kernel 3.11 bump + Anthropic compat hardening |
+
+Full history: [releases page](https://github.com/greenSheep999/cursor-proxy-oss/releases).
+
+### Project history (pre-v0.2.3)
+
+The project bootstrapped from a full protobuf reverse of Cursor's
+kernel 3.10.20 wire protocol. In its first ~48 hours it went from a
+single Anthropic-shaped endpoint to a multi-provider proxy with:
+
+- OpenAI Chat / Legacy / Responses, Anthropic Messages + count_tokens,
+  Gemini native
+- Multi-turn conversation history + `tool_use` / `tool_result` threading
+- MCP tools passthrough
+- Prompt-cache counter passthrough + local LRU-TTL simcache
+- `/v1/usage` account quota snapshot
+- Multi-key API auth, `-token-file` account loader, upstream egress
+  proxy for geo-gated model families
+- Multi-arch Docker image published to GHCR
+
+`v0.2.x` then bumped the kernel to Cursor 3.11 and hardened
+Anthropic compatibility. `v0.3.x` added agent mode via the official
+Cursor SDK.
 
 ## Notes
 
