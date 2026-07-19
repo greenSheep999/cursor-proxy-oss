@@ -41,7 +41,7 @@ path in the environment. Set `CURSOR_API_KEY` and you're done:
 docker run -p 127.0.0.1:8317:8317 \
   -e CURSOR_PROXY_API_KEYS=sk-cp-... \
   -e CURSOR_API_KEY=crsr_... \
-  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.4
+  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.5
 ```
 
 `docker-compose.yml` in this repo already exposes `CURSOR_API_KEY`
