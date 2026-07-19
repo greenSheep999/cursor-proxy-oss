@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: cursor-proxy
-          image: ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.5
+          image: ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.7
           imagePullPolicy: Always
           ports:
             - containerPort: 8317

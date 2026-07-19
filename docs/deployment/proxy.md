@@ -66,7 +66,7 @@ docker run \
   -e NO_PROXY=localhost,127.0.0.1 \
   -e CURSOR_PROXY_API_KEYS=$SK \
   -v ./auth:/data/accounts:ro \
-  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.5
+  ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.7
 ```
 
 ### 3. `CURSOR_PROXY_UPSTREAM` environment
