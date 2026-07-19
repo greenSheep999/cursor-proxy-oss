@@ -7,7 +7,7 @@ services:
     # linux/amd64 + linux/arm64 both work — Docker picks the right one.
     # Pinned to a specific upstream release; the sync-from-upstream
     # workflow bumps this tag automatically.
-    image: ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.2
+    image: ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.3
     container_name: cursor-proxy
     restart: unless-stopped
     # Always try to pull a newer image at compose up. Remove if you want

@@ -15,7 +15,7 @@ services:
     # workflow bumps this line automatically when cursor-proto ships
     # a new cursor<X.Y>/v<x.y.z> tag. Don't hand-edit unless you know
     # exactly which version you want.
-    image: ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.2
+    image: ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.3
     container_name: cursor-proxy
     restart: unless-stopped
     pull_policy: always
