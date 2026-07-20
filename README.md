@@ -1,6 +1,6 @@
 # cursor-proxy
 
-> Tracking **Cursor kernel `3.11`** &nbsp;·&nbsp; current image tag `cursor3.11-v0.3.1` &nbsp;·&nbsp;
+> Tracking **Cursor kernel `3.11`** &nbsp;·&nbsp; current image tag `cursor3.11-v0.3.8` &nbsp;·&nbsp;
 > [release history](https://github.com/greenSheep999/cursor-proxy-oss/releases)
 
 Run any modern coding-agent CLI against your own Cursor Pro subscription.
@@ -107,7 +107,7 @@ gate so ops probes and sidecar supervisors can read them freely
 - **Multi-arch Docker image** — `linux/amd64` + `linux/arm64`,
   works on Intel/AMD servers, Apple Silicon, Raspberry Pi.
 - **Version pinned to upstream kernel** — image tag is
-  `cursor<kernel>-v<semver>` (e.g. `cursor3.11-v0.3.1`), so you
+  `cursor<kernel>-v<semver>` (e.g. `cursor3.11-v0.3.8`), so you
   always know which Cursor client version is being impersonated.
 
 ## Quick start
@@ -284,7 +284,7 @@ curl http://localhost:8317/v1/models -H "Authorization: Bearer $SK" \
 Image tags follow the upstream kernel line and semver:
 
 ```
-ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.8<X.Y>-v<x.y.z>
+ghcr.io/greensheep999/cursor-proxy:cursor<X.Y>-v<x.y.z>
 ```
 
 - `<X.Y>` — Cursor kernel version being impersonated (e.g. `3.11`).
@@ -294,7 +294,7 @@ ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.8<X.Y>-v<x.y.z>
 - `latest` and `cursor<X.Y>-latest` — moving pointers (avoid in
   production; pin to an explicit `cursor<X.Y>-v<x.y.z>`).
 
-Git tags in this repo mirror image tags 1-for-1 (`cursor3.11-v0.3.1`
+Git tags in this repo mirror image tags 1-for-1 (`cursor3.11-v0.3.8`
 etc.). They are refreshed automatically on every upstream release by
 `.github/workflows/sync-from-upstream.yml`.
 
@@ -302,6 +302,9 @@ etc.). They are refreshed automatically on every upstream release by
 
 | Release | Kernel | Headline |
 |---|---|---|
+| [`cursor3.11-v0.3.8`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.8) | `3.11` | Composer native tool-call mapping + write-path fixes |
+| [`cursor3.11-v0.3.3`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.3) | `3.11` | Composer write-path unblock + account management panel |
+| [`cursor3.11-v0.3.2`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.2) | `3.11` | Quota management — categorized spend + token breakdown + per-request events |
 | [`cursor3.11-v0.3.1`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.1) | `3.11` | Agent mode via `@cursor/sdk` + `/v1/usage/events` |
 | [`cursor3.11-v0.2.7`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.2.7) | `3.11` | Observability endpoints + per-window token breakdown |
 | [`cursor3.11-v0.2.3`](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.2.3) | `3.11` | Kernel 3.11 bump + Anthropic compat hardening |
@@ -313,7 +316,7 @@ image tags on GHCR track the Cursor 3.10.20 kernel line for accounts
 provisioned against that older client build. They are maintenance-only
 — agent mode is not back-ported, and new features land on `3.11` first.
 If you're setting up a fresh install, use `cursor3.11-*`.
-Latest 3.10 image: `ghcr.io/greensheep999/cursor-proxy:cursor3.11-v0.3.8`.
+Latest 3.10 image: `ghcr.io/greensheep999/cursor-proxy:cursor3.10-latest`.
 
 ### Project history (pre-v0.2.3)
 

@@ -50,7 +50,7 @@ up -d`.
 
 ### 2. Combined tarball
 
-Download the release tarball from the [releases page](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.1),
+Download the release tarball from the [releases page](https://github.com/greenSheep999/cursor-proxy-oss/releases/tag/cursor3.11-v0.3.8),
 extract, and:
 
 ```bash
